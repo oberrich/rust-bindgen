@@ -1,9 +1,9 @@
 //! A public API for more fine-grained customization of bindgen behavior.
 
 pub use crate::ir::analysis::DeriveTrait;
-pub use crate::ir::function::FunctionKind;
 pub use crate::ir::derive::CanDerive as ImplementsTrait;
 pub use crate::ir::enum_ty::{EnumVariantCustomBehavior, EnumVariantValue};
+pub use crate::ir::function::FunctionKind;
 pub use crate::ir::int::IntKind;
 use std::fmt;
 

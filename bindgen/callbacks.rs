@@ -1,7 +1,7 @@
 //! A public API for more fine-grained customization of bindgen behavior.
 
 pub use crate::ir::analysis::DeriveTrait;
-pub use crate::ir::comp::MethodKind as AttributeMethodKind;
+pub use crate::ir::function::FunctionKind;
 pub use crate::ir::derive::CanDerive as ImplementsTrait;
 pub use crate::ir::enum_ty::{EnumVariantCustomBehavior, EnumVariantValue};
 pub use crate::ir::int::IntKind;
@@ -242,7 +242,7 @@ pub struct AttributeInfo<'a> {
     /// The kind of the item.
     pub kind: AttributeItemKind,
     /// The kind of a method item.
-    pub method_kind: Option<AttributeMethodKind>,
+    pub fn_kind: Option<FunctionKind>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

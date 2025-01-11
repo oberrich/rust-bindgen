@@ -1071,7 +1071,7 @@ impl CodeGenerator for Type {
                                 cb.add_attributes(&AttributeInfo {
                                     name: &name,
                                     kind: AttributeItemKind::Struct,
-                                    method_kind: None,
+                                    fn_kind: None,
                                 })
                             });
                         attributes.extend(
@@ -2538,7 +2538,7 @@ impl CodeGenerator for CompInfo {
                 } else {
                     AttributeItemKind::Struct
                 },
-                method_kind: None,
+                fn_kind: None,
             })
         });
         attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -3154,7 +3154,7 @@ impl Method {
             cb.add_attributes(&AttributeInfo {
                 name: &canonical_name,
                 kind: AttributeItemKind::Function,
-                method_kind: Some(self.kind()),
+                fn_kind: Some(FunctionKind::Method(self.kind())),
             })
         });
         attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -3740,7 +3740,7 @@ impl CodeGenerator for Enum {
                 cb.add_attributes(&AttributeInfo {
                     name: &name,
                     kind: AttributeItemKind::Enum,
-                    method_kind: None,
+                    fn_kind: None,
                 })
             });
             attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -4604,6 +4604,15 @@ impl CodeGenerator for Function {
         }
 
         let mut attributes = vec![];
+
+        let custom_attributes = ctx.options().all_callbacks(|cb| {
+            cb.add_attributes(&AttributeInfo {
+                name: &canonical_name,
+                kind: AttributeItemKind::Function,
+                fn_kind: Some(self.kind()),
+            })
+        });
+        attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
 
         if true {
             let must_use = signature.must_use() || {

@@ -3066,11 +3066,11 @@ impl Method {
 
         method_names.insert(name.clone());
 
-        let mut function_name = function_item.canonical_name(ctx);
+        let mut canonical_name = function_item.canonical_name(ctx);
         if times_seen > 0 {
-            write!(&mut function_name, "{times_seen}").unwrap();
+            write!(&mut canonical_name, "{times_seen}").unwrap();
         }
-        let function_name = ctx.rust_ident(function_name);
+        let function_name = ctx.rust_ident(&canonical_name);
         let mut args = utils::fnsig_arguments(ctx, signature);
         let mut ret = utils::fnsig_return_ty(ctx, signature);
 
@@ -3152,7 +3152,7 @@ impl Method {
 
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
-                name: &name,
+                name: &canonical_name,
                 kind: AttributeItemKind::Function,
                 method_kind: Some(self.kind()),
             })

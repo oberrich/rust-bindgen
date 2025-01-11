@@ -21,8 +21,8 @@ use self::struct_layout::StructLayoutTracker;
 use super::BindgenOptions;
 
 use crate::callbacks::{
-    AttributeInfo, DeriveInfo, DiscoveredItem, DiscoveredItemId, FieldInfo,
-    TypeKind as DeriveTypeKind,
+    AttributeInfo, AttributeItemKind, DeriveInfo, DiscoveredItem,
+    DiscoveredItemId, FieldInfo, TypeKind as DeriveTypeKind,
 };
 use crate::codegen::error::Error;
 use crate::ir::analysis::{HasVtable, Sizedness};
@@ -1070,7 +1070,8 @@ impl CodeGenerator for Type {
                             ctx.options().all_callbacks(|cb| {
                                 cb.add_attributes(&AttributeInfo {
                                     name: &name,
-                                    kind: DeriveTypeKind::Struct,
+                                    kind: AttributeItemKind::Struct,
+                                    method_kind: None,
                                 })
                             });
                         attributes.extend(
@@ -2533,10 +2534,11 @@ impl CodeGenerator for CompInfo {
             cb.add_attributes(&AttributeInfo {
                 name: &canonical_name,
                 kind: if is_rust_union {
-                    DeriveTypeKind::Union
+                    AttributeItemKind::Union
                 } else {
-                    DeriveTypeKind::Struct
+                    AttributeItemKind::Struct
                 },
+                method_kind: None,
             })
         });
         attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -3148,6 +3150,15 @@ impl Method {
 
         let mut attrs = vec![attributes::inline()];
 
+        let custom_attributes = ctx.options().all_callbacks(|cb| {
+            cb.add_attributes(&AttributeInfo {
+                name: &name,
+                kind: AttributeItemKind::Function,
+                method_kind: Some(self.kind()),
+            })
+        });
+        attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+
         if signature.must_use() {
             attrs.push(attributes::must_use());
         }
@@ -3728,7 +3739,8 @@ impl CodeGenerator for Enum {
             let custom_attributes = ctx.options().all_callbacks(|cb| {
                 cb.add_attributes(&AttributeInfo {
                     name: &name,
-                    kind: DeriveTypeKind::Enum,
+                    kind: AttributeItemKind::Enum,
+                    method_kind: None,
                 })
             });
             attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));

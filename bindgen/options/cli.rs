@@ -3,7 +3,8 @@
 use crate::{
     builder,
     callbacks::{
-        AttributeInfo, AttributeItemKind, DeriveInfo, ItemInfo, ParseCallbacks, TypeKind,
+        AttributeInfo, AttributeItemKind, DeriveInfo, ItemInfo, ParseCallbacks,
+        TypeKind,
     },
     features::{RustEdition, EARLIEST_STABLE_RUST},
     regex_set::RegexSet,
@@ -759,10 +760,16 @@ where
 
             let flag = match &self.kind {
                 None => "--with-attribute-custom",
-                Some(AttributeItemKind::Struct) => "--with-attribute-custom-struct",
+                Some(AttributeItemKind::Struct) => {
+                    "--with-attribute-custom-struct"
+                }
                 Some(AttributeItemKind::Enum) => "--with-attribute-custom-enum",
-                Some(AttributeItemKind::Union) => "--with-attribute-custom-union",
-                Some(AttributeItemKind::Function) => "--with-attribute-custom-function",
+                Some(AttributeItemKind::Union) => {
+                    "--with-attribute-custom-union"
+                }
+                Some(AttributeItemKind::Function) => {
+                    "--with-attribute-custom-function"
+                }
             };
 
             let attributes = self.attributes.join(",");

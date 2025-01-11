@@ -242,7 +242,7 @@ pub struct AttributeInfo<'a> {
     /// The kind of the item.
     pub kind: AttributeItemKind,
     /// The kind of a method item.
-    pub method_kind: Option<AttributeMethodKind>
+    pub method_kind: Option<AttributeMethodKind>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

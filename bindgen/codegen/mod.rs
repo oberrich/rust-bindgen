@@ -3151,7 +3151,9 @@ impl Method {
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
                 name: &canonical_name,
-                kind: AttributeItemKind::Function(FunctionKind::Method(self.kind())),
+                kind: AttributeItemKind::Function(FunctionKind::Method(
+                    self.kind(),
+                )),
             })
         });
         attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));

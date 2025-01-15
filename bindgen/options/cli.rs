@@ -7,6 +7,7 @@ use crate::{
         TypeKind,
     },
     features::{RustEdition, EARLIEST_STABLE_RUST},
+    ir::function::FunctionKind,
     regex_set::RegexSet,
     Abi, AliasVariation, Builder, CodegenConfig, EnumVariation,
     FieldVisibilityKind, Formatter, MacroTypeVariation, NonCopyUnionStyle,
@@ -767,7 +768,7 @@ where
                 Some(AttributeItemKind::Union) => {
                     "--with-attribute-custom-union"
                 }
-                Some(AttributeItemKind::Function) => {
+                Some(AttributeItemKind::Function(_)) => {
                     "--with-attribute-custom-function"
                 }
             };
@@ -1037,7 +1038,7 @@ where
         ),
         (
             with_attribute_custom_function,
-            Some(AttributeItemKind::Function),
+            Some(AttributeItemKind::Function(FunctionKind::Function)),
             "--with-attribute-custom-function",
         ),
     ] {

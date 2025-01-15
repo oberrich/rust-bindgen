@@ -241,8 +241,6 @@ pub struct AttributeInfo<'a> {
     pub name: &'a str,
     /// The kind of the item.
     pub kind: AttributeItemKind,
-    /// The kind of a method item.
-    pub fn_kind: Option<FunctionKind>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -255,7 +253,7 @@ pub enum AttributeItemKind {
     /// The item is a Rust `union`.
     Union,
     /// The item is a Rust `fn`.
-    Function,
+    Function(FunctionKind),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

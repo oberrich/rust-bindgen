@@ -1071,7 +1071,6 @@ impl CodeGenerator for Type {
                                 cb.add_attributes(&AttributeInfo {
                                     name: &name,
                                     kind: AttributeItemKind::Struct,
-                                    fn_kind: None,
                                 })
                             });
                         attributes.extend(
@@ -2538,7 +2537,6 @@ impl CodeGenerator for CompInfo {
                 } else {
                     AttributeItemKind::Struct
                 },
-                fn_kind: None,
             })
         });
         attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -3153,8 +3151,7 @@ impl Method {
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
                 name: &canonical_name,
-                kind: AttributeItemKind::Function,
-                fn_kind: Some(FunctionKind::Method(self.kind())),
+                kind: AttributeItemKind::Function(FunctionKind::Method(self.kind())),
             })
         });
         attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -3740,7 +3737,6 @@ impl CodeGenerator for Enum {
                 cb.add_attributes(&AttributeInfo {
                     name: &name,
                     kind: AttributeItemKind::Enum,
-                    fn_kind: None,
                 })
             });
             attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
@@ -4608,8 +4604,7 @@ impl CodeGenerator for Function {
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
                 name: &canonical_name,
-                kind: AttributeItemKind::Function,
-                fn_kind: Some(self.kind()),
+                kind: AttributeItemKind::Function(self.kind()),
             })
         });
         attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));

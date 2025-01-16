@@ -149,8 +149,9 @@ impl ParseCallbacks for MacroCallback {
                 AttributeItemKind::Function(FunctionKind::Function)
             );
             vec!["#[must_use]".into()]
+        } else {
+            vec![]
         }
-        vec![]
     }
 }
 

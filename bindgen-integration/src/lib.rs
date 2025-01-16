@@ -319,13 +319,10 @@ fn test_custom_fn_attribute() {
         if let Item::Fn(item_fn) = item {
             if item_fn.sig.ident == "coord" {
                 found_coord = true;
-                has_must_use = item_fn.attrs.iter().any(|attr| {
-                    if let Ok(meta) = attr.parse_meta() {
-                        meta.path().is_ident("must_use")
-                    } else {
-                        false
-                    }
-                });
+                has_must_use = item_fn
+                    .attrs
+                    .iter()
+                    .any(|attr| attr.path().is_ident("must_use"));
             }
         }
     }

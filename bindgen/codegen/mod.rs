@@ -3024,7 +3024,7 @@ impl Method {
         let function = function_item.expect_function();
         let times_seen = function.codegen(ctx, result, function_item);
         let Some(times_seen) = times_seen else { return };
-        let signature_item = ctx.resolve_item(function.signature());
+        let signature_item: &Item = ctx.resolve_item(function.signature());
         let mut name = match self.kind() {
             MethodKind::Constructor => "new".into(),
             MethodKind::Destructor => "destruct".into(),
@@ -3146,7 +3146,13 @@ impl Method {
 
         let block = ctx.wrap_unsafe_ops(quote! ( #( #stmts );*));
 
-        let mut attrs = vec![attributes::inline()];
+        let mut attrs: Vec<proc_macro2::TokenStream> = vec![attributes::inline()];
+        attrs.extend(
+            function_item.annotations()
+                .attributes()
+                .iter()
+                .map(|s| s.parse().unwrap()),
+        );
 
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
@@ -4602,6 +4608,12 @@ impl CodeGenerator for Function {
         }
 
         let mut attributes = vec![];
+        attributes.extend(
+            item.annotations()
+                .attributes()
+                .iter()
+                .map(|s| s.parse().unwrap()),
+        );
 
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {

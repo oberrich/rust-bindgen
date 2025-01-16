@@ -1,7 +1,8 @@
 extern crate bindgen;
 
 use bindgen::callbacks::{
-    DeriveInfo, IntKind, MacroParsingBehavior, ParseCallbacks,
+    AttributeItemKind, DeriveInfo, FunctionKind, IntKind, MacroParsingBehavior,
+    ParseCallbacks,
 };
 use bindgen::{Builder, EnumVariation, Formatter};
 use std::collections::HashSet;
@@ -140,10 +141,16 @@ impl ParseCallbacks for MacroCallback {
         info: &bindgen::callbacks::AttributeInfo<'_>,
     ) -> Vec<String> {
         if info.name == "Test" {
-            vec!["#[cfg_attr(test, derive(PartialOrd))]".into()]
-        } else {
-            vec![]
+            assert!(info.kind == AttributeItemKind::Struct);
+            return vec!["#[cfg_attr(test, derive(PartialOrd))]".into()];
+        } else if info.name == "coord" {
+            assert!(
+                info.kind ==
+                    AttributeItemKind::Function(FunctionKind::Function)
+            );
+            return vec!["#[must_use]".into()];
         }
+        return vec![];
     }
 }
 

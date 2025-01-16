@@ -298,6 +298,49 @@ fn test_custom_derive() {
 }
 
 #[test]
+fn test_custom_fn_attribute() {
+    use std::env;
+    use std::fs;
+    use std::path::Path;
+    use syn::{parse_file, File, Item, ItemFn};
+
+    let out_dir =
+        std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
+    let test_file_path = Path::new(&out_dir).join("test.rs");
+    let file_content = fs::read_to_string(&test_file_path)
+        .expect("Failed to read test.rs file");
+    let syntax_tree: File =
+        parse_file(&file_content).expect("Failed to parse test.rs");
+
+    let mut found_coord = false;
+    let mut has_must_use = false;
+
+    for item in syntax_tree.items {
+        if let Item::Fn(item_fn) = item {
+            if item_fn.sig.ident == "coord" {
+                found_coord = true;
+                has_must_use = item_fn.attrs.iter().any(|attr| {
+                    if let Ok(meta) = attr.parse_meta() {
+                        meta.path().is_ident("must_use")
+                    } else {
+                        false
+                    }
+                });
+            }
+        }
+    }
+
+    assert!(
+        found_coord,
+        "The function 'coord' was not found in the source."
+    );
+    assert!(
+        has_must_use,
+        "The function 'coord' does not have the #[must_use] attribute."
+    );
+}
+
+#[test]
 fn test_custom_attributes() {
     // The `add_attributes` callback should have added `#[cfg_attr(test, derive(PartialOrd))])`
     // to the `Test` struct. If it didn't, this will fail to compile.

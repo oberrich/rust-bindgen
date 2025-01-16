@@ -3148,7 +3148,8 @@ impl Method {
 
         let mut attrs = vec![attributes::inline()];
         attrs.extend(
-            function_item.annotations()
+            function_item
+                .annotations()
                 .attributes()
                 .iter()
                 .map(|s| s.parse().unwrap()),

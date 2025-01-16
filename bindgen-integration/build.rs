@@ -141,16 +141,16 @@ impl ParseCallbacks for MacroCallback {
         info: &bindgen::callbacks::AttributeInfo<'_>,
     ) -> Vec<String> {
         if info.name == "Test" {
-            assert!(info.kind == AttributeItemKind::Struct);
-            return vec!["#[cfg_attr(test, derive(PartialOrd))]".into()];
+            assert_eq!(info.kind, AttributeItemKind::Struct);
+            vec!["#[cfg_attr(test, derive(PartialOrd))]".into()]
         } else if info.name == "coord" {
-            assert!(
-                info.kind ==
-                    AttributeItemKind::Function(FunctionKind::Function)
+            assert_eq!(
+                info.kind,
+                AttributeItemKind::Function(FunctionKind::Function)
             );
-            return vec!["#[must_use]".into()];
+            vec!["#[must_use]".into()]
         }
-        return vec![];
+        vec![]
     }
 }
 

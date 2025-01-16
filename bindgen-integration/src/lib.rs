@@ -302,7 +302,8 @@ fn test_custom_fn_attribute() {
     use std::env;
     use std::fs;
     use std::path::Path;
-    use syn::{parse_file, File, Item, ItemFn};
+    use syn::visit::Visit;
+    use syn::{parse_file, File, ForeignItem, Item, ItemForeignMod};
 
     let out_dir =
         std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
@@ -312,27 +313,42 @@ fn test_custom_fn_attribute() {
     let syntax_tree: File =
         parse_file(&file_content).expect("Failed to parse test.rs");
 
-    let mut found_coord = false;
-    let mut has_must_use = false;
+    struct FunctionVisitor {
+        found_coord: bool,
+        has_must_use: bool,
+    }
 
-    for item in syntax_tree.items {
-        if let Item::Fn(item_fn) = item {
-            if item_fn.sig.ident == "coord" {
-                found_coord = true;
-                has_must_use = item_fn
-                    .attrs
-                    .iter()
-                    .any(|attr| attr.path().is_ident("must_use"));
+    impl<'ast> Visit<'ast> for FunctionVisitor {
+        fn visit_item_foreign_mod(
+            &mut self,
+            foreign_mod: &'ast ItemForeignMod,
+        ) {
+            for foreign_item in &foreign_mod.items {
+                if let ForeignItem::Fn(item_fn) = foreign_item {
+                    if item_fn.sig.ident == "coord" {
+                        self.found_coord = true;
+                        self.has_must_use = item_fn
+                            .attrs
+                            .iter()
+                            .any(|attr| attr.path().is_ident("must_use"));
+                    }
+                }
             }
         }
     }
 
+    let mut visitor = FunctionVisitor {
+        found_coord: false,
+        has_must_use: false,
+    };
+    visitor.visit_file(&syntax_tree);
+
     assert!(
-        found_coord,
+        visitor.found_coord,
         "The function 'coord' was not found in the source."
     );
     assert!(
-        has_must_use,
+        visitor.has_must_use,
         "The function 'coord' does not have the #[must_use] attribute."
     );
 }

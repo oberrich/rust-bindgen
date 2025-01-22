@@ -1078,6 +1078,14 @@ impl CodeGenerator for Type {
                                 .iter()
                                 .map(|s| s.parse().unwrap()),
                         );
+                        attributes.extend(
+                            item.annotations().attributes()
+                                .iter()
+                                .map(|s| s.parse().unwrap()),
+                        );
+
+                        
+                
 
                         quote! {
                             #( #attributes )*

@@ -1073,20 +1073,18 @@ impl CodeGenerator for Type {
                                     kind: AttributeItemKind::Struct,
                                 })
                             });
-                        attributes.extend(
-                            custom_attributes
-                                .iter()
-                                .map(|s| s.parse().unwrap()),
-                        );
+                            
+                        // HACK: Smuggle annotations back into the system for type aliases
+                        item.annotations()
+                            .attributes()
+                            .extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+
                         attributes.extend(
                             item.annotations().attributes()
                                 .iter()
                                 .map(|s| s.parse().unwrap()),
                         );
-
                         
-                
-
                         quote! {
                             #( #attributes )*
                             pub struct #rust_name
@@ -2530,13 +2528,6 @@ impl CodeGenerator for CompInfo {
             attributes.push(attributes::derives(&derives));
         }
 
-        attributes.extend(
-            item.annotations()
-                .attributes()
-                .iter()
-                .map(|s| s.parse().unwrap()),
-        );
-
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
                 name: &canonical_name,
@@ -2547,8 +2538,18 @@ impl CodeGenerator for CompInfo {
                 },
             })
         });
-        attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+            // HACK: Smuggle annotations back into the system for type aliases
+            item.annotations()
+            .attributes()
+            .extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
 
+            attributes.extend(
+                item.annotations()
+                    .attributes()
+                    .iter()
+                    .map(|s| s.parse().unwrap()),
+            );
+    
         if item.must_use(ctx) {
             attributes.push(attributes::must_use());
         }
@@ -3155,13 +3156,6 @@ impl Method {
         let block = ctx.wrap_unsafe_ops(quote! ( #( #stmts );*));
 
         let mut attrs = vec![attributes::inline()];
-        attrs.extend(
-            function_item
-                .annotations()
-                .attributes()
-                .iter()
-                .map(|s| s.parse().unwrap()),
-        );
 
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
@@ -3171,7 +3165,19 @@ impl Method {
                 )),
             })
         });
-        attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+        
+            // HACK: Smuggle annotations back into the system for type aliases
+            function_item.annotations()
+            .attributes()
+            .extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+
+            attrs.extend(
+                function_item
+                    .annotations()
+                    .attributes()
+                    .iter()
+                    .map(|s| s.parse().unwrap()),
+            );
 
         if signature.must_use() {
             attrs.push(attributes::must_use());
@@ -3741,12 +3747,6 @@ impl CodeGenerator for Enum {
             // In most cases this will be a no-op, since custom_derives will be empty.
             derives.extend(custom_derives.iter().map(|s| s.as_str()));
 
-            attrs.extend(
-                item.annotations()
-                    .attributes()
-                    .iter()
-                    .map(|s| s.parse().unwrap()),
-            );
 
             // The custom attribute callback may return a list of attributes;
             // add them to the end of the list.
@@ -3756,8 +3756,18 @@ impl CodeGenerator for Enum {
                     kind: AttributeItemKind::Enum,
                 })
             });
-            attrs.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
 
+            // HACK: Smuggle annotations back into the system for type aliases
+            item.annotations()
+            .attributes()
+            .extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+
+            attrs.extend(
+                item.annotations()
+                    .attributes()
+                    .iter()
+                    .map(|s| s.parse().unwrap()),
+            );
             attrs.push(attributes::derives(&derives));
         }
 
@@ -4617,12 +4627,6 @@ impl CodeGenerator for Function {
         }
 
         let mut attributes = vec![];
-        attributes.extend(
-            item.annotations()
-                .attributes()
-                .iter()
-                .map(|s| s.parse().unwrap()),
-        );
 
         let custom_attributes = ctx.options().all_callbacks(|cb| {
             cb.add_attributes(&AttributeInfo {
@@ -4630,7 +4634,18 @@ impl CodeGenerator for Function {
                 kind: AttributeItemKind::Function(self.kind()),
             })
         });
-        attributes.extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+
+        // HACK: Smuggle annotations back into the system for type aliases
+        item.annotations()
+                .attributes()
+                .extend(custom_attributes.iter().map(|s| s.parse().unwrap()));
+
+        attributes.extend(
+            item.annotations()
+                .attributes()
+                .iter()
+                .map(|s| s.parse().unwrap()),
+        );
 
         if true {
             let must_use = signature.must_use() || {

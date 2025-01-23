@@ -5,6 +5,7 @@ pub use crate::ir::derive::CanDerive as ImplementsTrait;
 pub use crate::ir::enum_ty::{EnumVariantCustomBehavior, EnumVariantValue};
 pub use crate::ir::function::FunctionKind;
 pub use crate::ir::int::IntKind;
+use crate::HashSet;
 use std::fmt;
 
 /// An enum to allow ignoring parsing of macros.
@@ -134,9 +135,7 @@ pub trait ParseCallbacks: fmt::Debug {
     ///
     /// If no additional attributes are wanted, this function should return an
     /// empty `Vec`.
-    fn add_attributes(&self, _info: &AttributeInfo<'_>) -> Vec<String> {
-        vec![]
-    }
+    fn process_attributes(&self, _info: &AttributeInfo<'_>, _attributes: &mut HashSet<String>) {}
 
     /// Process a source code comment.
     fn process_comment(&self, _comment: &str) -> Option<String> {
@@ -252,6 +251,8 @@ pub enum AttributeItemKind {
     Enum,
     /// The item is a Rust `union`.
     Union,
+    /// The item is a Rust variable.
+    Var,
     /// The item is a Rust `fn`.
     Function(FunctionKind),
 }

@@ -580,6 +580,10 @@ impl BindgenOptions {
         self.parse_callbacks.iter().for_each(|cb| f(cb.as_ref()));
     }
 
+    fn for_each_callback_mut(&self, mut f: impl FnMut(&dyn callbacks::ParseCallbacks)) {
+        self.parse_callbacks.iter().for_each(|cb| f(cb.as_ref()));
+    }
+
     fn process_comment(&self, comment: &str) -> String {
         let comment = comment::preprocess(comment);
         self.parse_callbacks

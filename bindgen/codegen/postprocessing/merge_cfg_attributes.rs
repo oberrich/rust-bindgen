@@ -37,6 +37,7 @@ impl Visitor {
                     #(#items)*
                 }
             } else {
+                // TODO: Don't swallow abi/unsafety :(
                 quote! {
                     #(#cc_attrs)*
                     unsafe extern "C" {

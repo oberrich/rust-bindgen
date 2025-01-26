@@ -105,7 +105,7 @@ impl AttributeSet {
                 "_".to_string(),
             )
             .collect::<String>()
-            .replace(|c| !c.is_alphanumeric(), "_")
+            .replace(|c: char| !c.is_alphanumeric(), "_")
             .chars()
             .coalesce(|a, b| {
                 if a == '_' && b == '_' {

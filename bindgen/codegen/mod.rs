@@ -57,6 +57,7 @@ use crate::ir::var::Var;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt};
+use syn::{parse_quote, Attribute};
 
 use crate::{Entry, HashMap, HashSet};
 use std::borrow::Cow;
@@ -1066,28 +1067,46 @@ impl CodeGenerator for Type {
                 if let Some(inner_attrs) =
                     result.get_attributes(inner_item.id())
                 {
-                    attrs.extend(inner_attrs.iter().cloned());
+                    // Only apply attributes through type aliases when they are relevant to compilation
+                    attrs.extend(
+                        parse_tokens(inner_attrs)
+                        .into_iter()
+                        .map(|attr| parse_quote!{ #attr })
+                        .filter_map(|attr: Attribute|{
+                            if attr.path().is_ident("cfg") || attr.path().is_ident("link"){
+                                Some(attr.to_token_stream().to_string())
+                            } else {
+                                None
+                            }
+                        })
+                    );
                 }
 
+                // Apply attributes through annotations directly
                 attrs.extend(item.annotations().attributes().iter().cloned());
 
+                // Apply comments to attributes
                 if let Some(comment) = item.comment(ctx) {
                     attrs.insert(attributes::doc(comment).to_string());
                 }
 
+                // Allow the callbacks to process our attributes
                 ctx.options().for_each_callback_mut(|cb| {
                     cb.process_attributes(
                         &AttributeInfo {
                             name: &name,
-                            // TODO: Perhaps add a TypeAlias variant and provide the alias_style / AliasVariation here as well as the affected item
+                            // FIXME: Introduce a TypeAlias variant with extra information similar
+                            //        to DiscoveredItem::Alias, indicating this is merely an alias
+                            //        and not a new type definition.
                             kind: AttributeItemKind::Struct,
                         },
                         &mut attrs,
                     );
                 });
+
+                // Store the final attributes of this item
                 result.set_attributes(item.id(), attrs.clone());
 
-                // TODO: Only apply attributes relevant to conditional compilation
                 let attrs = parse_tokens(attrs);
                 let mut tokens = quote! {
                     #( #attrs )*

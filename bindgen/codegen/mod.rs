@@ -707,8 +707,7 @@ impl CodeGenerator for Var {
                 cb.process_attributes(
                     &AttributeInfo {
                         name: &canonical_name,
-                        // TODO: Change to Var
-                        kind: AttributeItemKind::Struct,
+                        kind: AttributeItemKind::Var,
                     },
                     &mut attrs,
                 );
@@ -834,8 +833,7 @@ impl CodeGenerator for Var {
                 cb.process_attributes(
                     &AttributeInfo {
                         name: &canonical_name,
-                        // TODO: Change to Var
-                        kind: AttributeItemKind::Struct,
+                        kind: AttributeItemKind::Var,
                     },
                     &mut attrs,
                 );
@@ -2873,7 +2871,6 @@ impl CodeGenerator for CompInfo {
             // non-zero padding bytes, especially when forwards/backwards compatibility is
             // involved.
             result.push(quote! {
-                // TODO: Only apply attributes relevant to conditional compilation
                 #( #attrs )*
                 impl #impl_generics_labels Default for #ty_for_impl {
                     fn default() -> Self {
@@ -2894,7 +2891,6 @@ impl CodeGenerator for CompInfo {
             let prefix = ctx.trait_prefix();
 
             result.push(quote! {
-                // TODO: Only apply attributes relevant to conditional compilation
                 #( #attrs )*
                 impl #impl_generics_labels ::#prefix::fmt::Debug for #ty_for_impl {
                     #impl_
@@ -2920,7 +2916,6 @@ impl CodeGenerator for CompInfo {
 
                 let prefix = ctx.trait_prefix();
                 result.push(quote! {
-                    // TODO: Only apply attributes relevant to conditional compilation
                     #( #attrs )*
                     impl #impl_generics_labels ::#prefix::cmp::PartialEq for #ty_for_impl #partialeq_bounds {
                         #impl_
@@ -2931,7 +2926,6 @@ impl CodeGenerator for CompInfo {
 
         if !methods.is_empty() {
             result.push(quote! {
-                // TODO: Only apply attributes relevant to conditional compilation
                 #( #attrs )*
                 impl #impl_generics_labels #ty_for_impl {
                     #( #methods )*
@@ -3415,10 +3409,6 @@ impl<'a> EnumBuilder<'a> {
                 is_global,
             } => EnumBuilder::NewType {
                 canonical_name: name,
-                // TODO: Think this through in the morning, `attrs` get injected into tokens here already for NewTypes
-                // TODO: That obviously changes some things, might actually save a lot of work :)
-                // TODO: Also check the other variants
-                // TODO: Insert #[doc = "meow"] to test
                 tokens: quote! {
                     #( #attrs )*
                     pub struct #ident (pub #repr);
@@ -3528,7 +3518,7 @@ impl<'a> EnumBuilder<'a> {
                     let enum_ident = ctx.rust_ident(canonical_name);
                     let variant_ident = ctx.rust_ident(variant_name);
 
-                    // TODO: Make sure attributes are applied properly here, waiting for CI failure
+                    // FIXME: Make sure attributes are emitted properly
                     result.push(quote! {
                         impl #enum_ident {
                             #doc
@@ -3945,9 +3935,7 @@ impl CodeGenerator for Enum {
                             let enum_canonical_name = &ident;
                             let variant_name =
                                 ctx.rust_ident_raw(&*mangled_name);
-                            // TODO: Check if we need the attributes here
                             result.push(quote! {
-                                // TODO: Only apply attributes relevant to conditional compilation
                                 #(#attrs)*
                                 impl #enum_rust_ty {
                                     pub const #variant_name : #enum_rust_ty =

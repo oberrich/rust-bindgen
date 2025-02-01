@@ -28,8 +28,11 @@ macro_rules! pass {
     };
 }
 
-const PASSES: &[PostProcessingPass] =
-    &[pass!(merge_cfg_attributes), pass!(merge_extern_blocks), pass!(sort_semantically)];
+const PASSES: &[PostProcessingPass] = &[
+    pass!(merge_cfg_attributes),
+    pass!(merge_extern_blocks),
+    pass!(sort_semantically),
+];
 
 pub(crate) fn postprocessing(
     items: Vec<TokenStream>,

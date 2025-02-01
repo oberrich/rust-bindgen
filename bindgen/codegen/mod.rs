@@ -57,7 +57,9 @@ use crate::ir::var::Var;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt};
-use syn::{parse_quote, Attribute};
+use syn::parse::ParseStream;
+use syn::token::Pound;
+use syn::{parse, parse2, parse_quote, parse_str, Attribute, Block};
 
 use crate::{Entry, HashMap, HashSet};
 use std::borrow::Cow;
@@ -500,6 +502,51 @@ trait CodeGenerator {
     ) -> Self::Return;
 }
 
+fn normalize_attributes(attrs: HashSet<String>) -> HashSet<String> {
+    attrs
+        .iter()
+        .map(|attr| {
+            let mut in_quotes = None;
+            attr.chars()
+                .filter_map(|c| match c {
+                    '"' | '\'' if in_quotes.is_none() => {
+                        in_quotes = Some(c);
+                        Some(c)
+                    }
+                    c if in_quotes == Some(c) => {
+                        in_quotes = None;
+                        Some(c)
+                    }
+                    c if in_quotes.is_some() => Some(c),
+                    c if !c.is_whitespace() => Some(c),
+                    _ => None,
+                })
+                .collect()
+        })
+        .collect()
+}
+
+fn process_attributes(
+    result: &mut CodegenResult,
+    item: &Item,
+    ctx: &BindgenContext,
+    attrs: HashSet<String>,
+    kind: AttributeItemKind,
+) -> Vec<TokenStream> {
+    let mut attrs = normalize_attributes(attrs);
+    ctx.options().for_each_callback_mut(|cb| {
+        cb.process_attributes(
+            &AttributeInfo {
+                name: &item.canonical_name(ctx),
+                kind,
+            },
+            &mut attrs,
+        );
+    });
+    result.set_attributes(item.id(), attrs.clone());
+    parse_tokens(normalize_attributes(attrs))
+}
+
 impl Item {
     fn process_before_codegen(
         &self,
@@ -703,17 +750,24 @@ impl CodeGenerator for Var {
         let ty = var_ty.to_rust_ty_or_opaque(ctx, &());
 
         if let Some(val) = self.val() {
-            ctx.options().for_each_callback_mut(|cb| {
-                cb.process_attributes(
-                    &AttributeInfo {
-                        name: &canonical_name,
-                        kind: AttributeItemKind::Var,
-                    },
-                    &mut attrs,
-                );
-            });
-            result.set_attributes(item.id(), attrs.clone());
-            let attrs = parse_tokens(attrs);
+            /*if let Item::Fn(func) = item {
+                for attr in func.attrs {
+                    // Process the attribute and extract key-value pairs
+                    if let Ok(Meta::NameValue(meta)) = attr.parse_meta() {
+                        // Check if the value of the attribute is a string literal
+                        if let Lit::Str(value) = meta.lit {
+                            attrs.insert(meta.path.get_ident().unwrap().to_string(), value.value());
+                        }
+                    }
+                }
+            }*/
+            let attrs = process_attributes(
+                result,
+                item,
+                ctx,
+                attrs,
+                AttributeItemKind::Var,
+            );
 
             match *val {
                 VarType::Bool(val) => {
@@ -829,17 +883,13 @@ impl CodeGenerator for Var {
                 }
             }
 
-            ctx.options().for_each_callback_mut(|cb| {
-                cb.process_attributes(
-                    &AttributeInfo {
-                        name: &canonical_name,
-                        kind: AttributeItemKind::Var,
-                    },
-                    &mut attrs,
-                );
-            });
-            result.set_attributes(item.id(), attrs.clone());
-            let attrs = parse_tokens(attrs);
+            let attrs = process_attributes(
+                result,
+                item,
+                ctx,
+                attrs,
+                AttributeItemKind::Var,
+            );
 
             let maybe_mut = if self.is_const() {
                 quote! {}
@@ -1068,15 +1118,17 @@ impl CodeGenerator for Type {
                     // Only apply attributes through type aliases when they are relevant to compilation
                     attrs.extend(
                         parse_tokens(inner_attrs)
-                        .into_iter()
-                        .map(|attr| parse_quote!{ #attr })
-                        .filter_map(|attr: Attribute|{
-                            if attr.path().is_ident("cfg") || attr.path().is_ident("link"){
-                                Some(attr.to_token_stream().to_string())
-                            } else {
-                                None
-                            }
-                        })
+                            .into_iter()
+                            .map(|attr| parse_quote! { #attr })
+                            .filter_map(|attr: Attribute| {
+                                if attr.path().is_ident("cfg") ||
+                                    attr.path().is_ident("link")
+                                {
+                                    Some(attr.to_token_stream().to_string())
+                                } else {
+                                    None
+                                }
+                            }),
                     );
                 }
 
@@ -1088,28 +1140,18 @@ impl CodeGenerator for Type {
                     attrs.insert(attributes::doc(comment).to_string());
                 }
 
-                // Allow the callbacks to process our attributes
-                ctx.options().for_each_callback_mut(|cb| {
-                    cb.process_attributes(
-                        &AttributeInfo {
-                            name: &name,
-                            // FIXME: Introduce a TypeAlias variant with extra information similar
-                            //        to DiscoveredItem::Alias, indicating this is merely an alias
-                            //        and not a new type definition.
-                            kind: AttributeItemKind::Struct,
-                        },
-                        &mut attrs,
-                    );
-                });
+                let attrs = process_attributes(
+                    result,
+                    item,
+                    ctx,
+                    attrs,
+                    AttributeItemKind::Struct,
+                );
 
-                // Store the final attributes of this item
-                result.set_attributes(item.id(), attrs.clone());
-
-                let attrs = parse_tokens(attrs);
                 let mut tokens = quote! {
                     #( #attrs )*
                 };
-                
+
                 // We prefer using `pub use` over `pub type` because of:
                 // https://github.com/rust-lang/rust/issues/26264
                 if matches!(inner_rust_type, syn::Type::Path(_)) &&
@@ -2608,21 +2650,18 @@ impl CodeGenerator for CompInfo {
         }
 
         attrs.extend(item.annotations().attributes().iter().cloned());
-        ctx.options().for_each_callback_mut(|cb| {
-            cb.process_attributes(
-                &AttributeInfo {
-                    name: &canonical_name,
-                    kind: if is_rust_union {
-                        AttributeItemKind::Union
-                    } else {
-                        AttributeItemKind::Struct
-                    },
-                },
-                &mut attrs,
-            );
-        });
-        result.set_attributes(item.id(), attrs.clone());
-        let attrs = parse_tokens(attrs);
+
+        let attrs = process_attributes(
+            result,
+            item,
+            ctx,
+            attrs,
+            if is_rust_union {
+                AttributeItemKind::Union
+            } else {
+                AttributeItemKind::Struct
+            },
+        );
 
         let mut tokens = if is_rust_union {
             quote! {
@@ -3234,19 +3273,13 @@ impl Method {
             attrs.insert(attributes::must_use().to_string());
         }
 
-        ctx.options().for_each_callback_mut(|cb| {
-            cb.process_attributes(
-                &AttributeInfo {
-                    name: &canonical_name,
-                    kind: AttributeItemKind::Function(FunctionKind::Method(
-                        self.kind(),
-                    )),
-                },
-                &mut attrs,
-            );
-        });
-        result.set_attributes(function_item.id(), attrs.clone());
-        let attrs = parse_tokens(attrs);
+        let attrs = process_attributes(
+            result,
+            function_item,
+            ctx,
+            attrs,
+            AttributeItemKind::Function(FunctionKind::Method(self.kind())),
+        );
 
         let name = ctx.rust_ident(&name);
         methods.push(quote! {
@@ -3859,20 +3892,21 @@ impl CodeGenerator for Enum {
         // add them to the end of the list.
         attrs.extend(item.annotations().attributes().iter().cloned());
 
-        ctx.options().for_each_callback_mut(|cb| {
-            cb.process_attributes(
-                &AttributeInfo {
-                    name: &name,
-                    kind: AttributeItemKind::Enum,
-                },
-                &mut attrs,
-            );
-        });
-        result.set_attributes(item.id(), attrs.clone());
+        let attrs = process_attributes(
+            result,
+            item,
+            ctx,
+            attrs,
+            AttributeItemKind::Enum,
+        );
 
-        let attrs = parse_tokens(attrs);
-        let mut builder =
-            EnumBuilder::new(&name, attrs.clone(), repr, variation, has_typedef);
+        let mut builder = EnumBuilder::new(
+            &name,
+            attrs.clone(),
+            repr,
+            variation,
+            has_typedef,
+        );
 
         // A map where we keep a value -> variant relation.
         let mut seen_values = HashMap::<_, Ident>::default();
@@ -4820,18 +4854,14 @@ impl CodeGenerator for Function {
             .unsafe_extern_blocks
             .then(|| quote!(unsafe));
 
-        ctx.options().for_each_callback_mut(|cb| {
-            cb.process_attributes(
-                &AttributeInfo {
-                    name: &name,
-                    kind: AttributeItemKind::Function(self.kind()),
-                },
-                &mut attrs,
-            );
-        });
-        result.set_attributes(item.id(), attrs.clone());
+        let attrs = process_attributes(
+            result,
+            item,
+            ctx,
+            attrs,
+            AttributeItemKind::Function(FunctionKind::Function),
+        );
 
-        let attrs = parse_tokens(attrs);
         let tokens = quote! {
             #wasm_link_attribute
             #safety extern #abi {

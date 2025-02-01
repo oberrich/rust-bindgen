@@ -255,6 +255,7 @@ pub enum AttributeItemKind {
     Var,
     /// The item is a Rust `fn`.
     Function(FunctionKind),
+    // TODO: Add `Alias` variant and more information about other items
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

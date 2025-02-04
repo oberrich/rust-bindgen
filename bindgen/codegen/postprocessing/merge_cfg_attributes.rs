@@ -208,6 +208,9 @@ impl Visitor {
 
     fn visit_foreign_mod(&mut self, foreign_mod: &mut ItemForeignMod) {
         for mut foreign_item in std::mem::take(&mut foreign_mod.items) {
+            // When MSRV >= 1.79.0 we can return &Vec::new() in the generic case as this wll get lifetime extended,
+            // see also https://blog.rust-lang.org/2024/06/13/Rust-1.79.0.html#extending-automatic-temporary-lifetime-extension.
+            let mut _attrs = vec![];
             let (inner_attrs, inner_unsafety, inner_abi) =
                 match &mut foreign_item {
                     ForeignItem::Fn(f) => {
@@ -216,7 +219,7 @@ impl Visitor {
                     ForeignItem::Static(s) => (&mut s.attrs, None, None),
                     ForeignItem::Type(t) => (&mut t.attrs, None, None),
                     ForeignItem::Macro(m) => (&mut m.attrs, None, None),
-                    _ => (&mut Vec::new(), None, None),
+                    _ => (&mut _attrs, None, None),
                 };
 
             let mut attr_set = AttributeSet::new(
